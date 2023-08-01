@@ -19,7 +19,7 @@ public class Main {
             SourceFile srcFile = SourceMap.bufferSrcFile(args[0]);
             SourceMap.bufferSrcFile("./tests/SecondTest.java");
             SourceMap.bufferSrcFile("./tests/ThirdTest.java");
-            System.out.println(SourceMap.getSourcePosition(52));
+            System.out.println(SourceMap.getSourcePosition(66));
 
         } catch (Exception e) {
             if (e instanceof IOException) {

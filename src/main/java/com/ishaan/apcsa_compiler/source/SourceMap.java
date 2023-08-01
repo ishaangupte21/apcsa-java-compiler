@@ -111,17 +111,17 @@ public class SourceMap {
 
             // Check for newline characters
             if (currByte == 0xa) {
-                newLineChars.add(pos + currentOffset);
+                newLineChars.add((long) pos);
                 pos++;
                 continue;
             }
 
             if (currByte == 0xc) {
                 // Since Java allows \r\n to be a single new-line character, we must insert both into the map.
-                newLineChars.add(pos + currentOffset);
+                newLineChars.add((long) pos);
 
                 if (fileBuffer.get(++pos) == 0xa) {
-                    newLineChars.add(pos + currentOffset);
+                    newLineChars.add((long) pos);
                     pos++;
                 }
 
@@ -136,7 +136,7 @@ public class SourceMap {
             }
 
             // Otherwise, we need to parse the UTF-8 unicode codepoints.
-            long codepointStartPos = currentOffset + pos;
+            long codepointStartPos = pos;
 
             MultiByteChar mbChar = UnicodeReader.decodeCodepoint(currByte, pos, fileBuffer, fileSize);
             multiByteChars.put(codepointStartPos, mbChar);
