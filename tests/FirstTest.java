@@ -1,3 +1,1 @@
-Some random text content
-😀
-Some other text content
+1.234

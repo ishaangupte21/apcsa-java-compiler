@@ -151,6 +151,12 @@ public class SourceMap {
         return thisFile;
     }
 
+    /**
+     * This method obtains the SourcePosition of an absolute position.
+     *
+     * @param absolutePosition The absolute source position within the source map.
+     * @return the {@link SourcePosition} instance of the absolute position within its file.
+     */
     public static SourcePosition getSourcePosition(long absolutePosition) {
         // First, we need to convert this absolute position into a local position.
         int totalSrcFiles = srcFiles.size();

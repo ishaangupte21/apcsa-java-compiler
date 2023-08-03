@@ -1,6 +1,7 @@
 package com.ishaan.apcsa_compiler.source;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -135,5 +136,55 @@ public class SourceFile {
         }
 
         return col;
+    }
+
+    /**
+     * This method queries the multiByteChars Hash table in order to check if there is a multibyte character at the given position.
+     *
+     * @param localPosition The local position within the file to be checked.
+     * @return The response from calling get() on the HashMap.
+     */
+    public MultiByteChar getMultiByteChar(long localPosition) {
+        return multiByteChars.get(localPosition);
+    }
+
+    /**
+     * This method gets the text of a specific line from this source file.
+     *
+     * @param line The line number for which the text will be retrieved.
+     * @return A string consisting of the text content of the line.
+     */
+    public String getLineText(int line) {
+        // Since we have the line number, we can find the start position of the line.
+        long lineStartPos;
+        if (line == 1) {
+            lineStartPos = hasUTF8BOM ? 3 : 0;
+        } else {
+            lineStartPos = newLineChars.get(line - 2) + 1;
+        }
+
+        // This cast is safe as a single file size can never be more than Integer.MAX_VALUE.
+        int intLineStartPos = (int) lineStartPos;
+        int lineEndPos;
+
+        // Now, we need to find the end position of the line.
+        int totalLines = newLineChars.size() + 1;
+        // If we have the last line, the end of the file is the end of the line.
+        if (line == totalLines) {
+            lineEndPos = size;
+        } else {
+            // Otherwise, we need to find the end of the current line.
+            lineEndPos = newLineChars.get(line - 1).intValue();
+        }
+
+        int lineLength = lineEndPos - intLineStartPos;
+        byte[] tempByteBuffer = new byte[lineLength];
+
+        // Now, we need to move through the ByteBuffer from the lineStartPos and add the file characters to the buffer.
+        for (int i = 0; i < lineLength; i++) {
+            tempByteBuffer[i] = buffer.get(intLineStartPos + i);
+        }
+
+        return new String(tempByteBuffer, StandardCharsets.UTF_8);
     }
 }
