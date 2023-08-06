@@ -58,6 +58,42 @@ public class Lexer {
     }
 
     /**
+     * This method determines whether a given codepoint is a hexadecimal digit.
+     *
+     * @param cp The codepoint to be checked.
+     * @return true if the codepoint is a hexadecimal digit, otherwise false.
+     */
+    private static boolean isHexDigit(int cp) {
+        switch (cp) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case 'a':
+            case 'b':
+            case 'c':
+            case 'd':
+            case 'e':
+            case 'f':
+            case 'A':
+            case 'B':
+            case 'C':
+            case 'D':
+            case 'E':
+            case 'F':
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
      * This method is the main lexer routine. It will tokenize the input using DFA based on the Java language specification.
      * In order to avoid cluttering the heap, the Parser will have one token instance which will be passed to the lexer and mutated by it.
      *
@@ -282,6 +318,20 @@ public class Lexer {
                     return;
                 }
 
+                case '.': {
+                    // If the dot is followed by a digit, we must proceed to scan a double literal.
+                    int nextPos = pos + 1;
+                    if (nextPos < fileSize && Character.isDigit(fileBuffer.get(nextPos))) {
+                        lexDoubleLiteral(tok, tokenRelativeStart, tokenAbsoluteStart);
+                        return;
+                    }
+
+                    // Otherwise, we can return a single character dot token.
+                    pos++;
+                    tok.make(TokenKind.DOT, tokenAbsoluteStart, tokenRelativeStart, 1);
+                    return;
+                }
+
                 // Now, we will begin scanning literals.
                 case '1':
                 case '2':
@@ -296,7 +346,38 @@ public class Lexer {
                     return;
 
                 case '0': {
+                    // Consume the 0.
+                    pos++;
 
+                    switch (getNextCodepoint()) {
+                        // Hex literals
+                        case 'x':
+                        case 'X':
+                            lexHexNumericLiteral(tok, tokenRelativeStart, tokenAbsoluteStart);
+                            return;
+
+                        // Binary literals
+                        case 'b':
+                        case 'B':
+//                            lexBinaryNumericLiteral(tok, tokenRelativeStart, tokenAbsoluteStart);
+                            return;
+
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+//                            lexOctalNumericLiteral(tok, tokenRelativeStart, tokenAbsoluteStart);
+                            return;
+
+                        default: {
+                            // For any other characters we can return the 0 literal token.
+                            tok.make(TokenKind.ZERO_LITERAL, tokenAbsoluteStart, tokenRelativeStart, 1);
+                            return;
+                        }
+                    }
                 }
             }
         }
@@ -371,6 +452,14 @@ public class Lexer {
         }
     }
 
+    /**
+     * This method will scan numeric literals from the input.
+     * It will begin by scanning digits for an integer literal, but if a floating point is encountered, it will switch to scanning double literals.
+     *
+     * @param tok                The {@link Token} instance which will be mutated with the new token information.
+     * @param tokenRelativeStart The starting position of the token within the source file.
+     * @param tokenAbsoluteStart The absolute starting position of the token in the source map.
+     */
     private void lexNumericLiteral(Token tok, long tokenRelativeStart, long tokenAbsoluteStart) {
         // Consume the starting numeric digit.
         pos++;
@@ -378,7 +467,7 @@ public class Lexer {
         // Since digits can be separated by numeric separators (underscore), we need to consume them in chunks.
         while (true) {
             switch (getNextCodepoint()) {
-//            // We need to consume all digits.
+                // We need to consume all digits.
                 case '0':
                 case '1':
                 case '2':
@@ -470,6 +559,14 @@ public class Lexer {
         }
     }
 
+    /**
+     * This method will scan the fractional part of double literals from the input.
+     * If the exponent indicator is encountered, it switches to scanning the exponent part
+     *
+     * @param tok                The {@link Token} instance which will be mutated with the new token information.
+     * @param tokenRelativeStart The starting position of the token within the source file.
+     * @param tokenAbsoluteStart The absolute starting position of the token in the source map.
+     */
     private void lexDoubleLiteral(Token tok, long tokenRelativeStart, long tokenAbsoluteStart) {
         // Consume the floating point.
         pos++;
@@ -562,6 +659,13 @@ public class Lexer {
         }
     }
 
+    /**
+     * This method will scan the exponent part of double literals from the input.
+     *
+     * @param tok                The {@link Token} instance which will be mutated with the new token information.
+     * @param tokenRelativeStart The starting position of the token within the source file.
+     * @param tokenAbsoluteStart The absolute starting position of the token in the source map.
+     */
     private void lexDoubleLiteralExponentPart(Token tok, long tokenRelativeStart, long tokenAbsoluteStart) {
         // Consume the exponent indicator
         pos++;
@@ -653,6 +757,306 @@ public class Lexer {
             // If we get no other numeric characters, we can end the literal.
             int tokenSize = (int) (pos - tokenRelativeStart);
             tok.make(TokenKind.DOUBLE_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+            return;
+        }
+    }
+
+    /**
+     * This method will scan hexadecimal numeric literals from the input.
+     *
+     * @param tok                The {@link Token} instance which will be mutated with the new token information.
+     * @param tokenRelativeStart The starting position of the token within the source file.
+     * @param tokenAbsoluteStart The absolute starting position of the token in the source map.
+     */
+    private void lexHexNumericLiteral(Token tok, long tokenRelativeStart, long tokenAbsoluteStart) {
+        // Consume the 'x' or 'X'.
+        pos++;
+
+        // The character following the 'x' must be a hex digit.
+        if (!isHexDigit(getNextCodepoint())) {
+            ErrorReporter.reportWithLocalFilePosition(ErrorKind.NO_HEX_DIGIT_AFTER_SPECIFIER, pos, 1, srcFile);
+            // Since hex literals are outside the subset, they will never be parsed, so we don't need to return a dummy token.
+            tok.make(TokenKind.HEX_DOUBLE_LITERAL, tokenAbsoluteStart, tokenRelativeStart, 2);
+            return;
+        }
+
+        // Consume the first hex digit.
+        pos++;
+
+        while (true) {
+            switch (getNextCodepoint()) {
+                // Consume all hex digits.
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                case 'a':
+                case 'b':
+                case 'c':
+                case 'd':
+                case 'e':
+                case 'f':
+                case 'A':
+                case 'B':
+                case 'C':
+                case 'D':
+                case 'E':
+                case 'F':
+                    pos++;
+                    continue;
+
+                    // Numeric separator
+                case '_': {
+                    int posBeforeSeparator = pos;
+
+                    // A numeric separator can consist of multiple underscores, so we need to consume them all.
+                    int nextCodepoint;
+                    do {
+                        pos++;
+                        nextCodepoint = getNextCodepoint();
+                    } while (nextCodepoint == '_');
+
+                    // If there are no more underscores, the next codepoint must be a digit.
+                    if (!isHexDigit(nextCodepoint)) {
+                        ErrorReporter.reportWithLocalFilePosition(ErrorKind.ILLEGAL_CHAR_AFTER_NUMERIC_SEPARATOR, pos, 1, srcFile);
+                        // For error recovery, we will return an integer literal upto the digit before the separator.
+                        int tokenSize = (int) (posBeforeSeparator - tokenRelativeStart);
+                        tok.make(TokenKind.INT_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+                        return;
+                    }
+
+                    // If we have a digit, we can consume it and keep going.
+                    pos++;
+                    continue;
+                }
+
+                // Long literal suffix
+                case 'L':
+                case 'l': {
+                    // Long literals are not part of the AP subset, so we must report the error.
+                    pos++;
+                    int tokenSize = (int) (pos - tokenRelativeStart);
+                    ErrorReporter.reportWithLocalFilePosition(ErrorKind.ILLEGAL_LONG_LITERAL, tokenRelativeStart, tokenSize, srcFile);
+                    tok.make(TokenKind.LONG_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+                    return;
+                }
+
+                // Floating point
+                case '.':
+                    lexHexDoubleLiteral(tok, tokenRelativeStart, tokenAbsoluteStart);
+                    return;
+
+                default: {
+                    // If there is no suffix, we can return the literal.
+                    int tokenSize = (int) (pos - tokenRelativeStart);
+                    ErrorReporter.reportWithLocalFilePosition(ErrorKind.ILLEGAL_HEX_LITERAL, tokenRelativeStart, tokenSize, srcFile);
+                    tok.make(TokenKind.HEX_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * This method scans the fractional portion of hexadecimal double literals.
+     *
+     * @param tok                The {@link Token} instance which will be mutated with the new token information.
+     * @param tokenRelativeStart The starting position of the token within the source file.
+     * @param tokenAbsoluteStart The absolute starting position of the token in the source map.
+     */
+    private void lexHexDoubleLiteral(Token tok, long tokenRelativeStart, long tokenAbsoluteStart) {
+        // Consume the floating point.
+        pos++;
+
+        // Now, we must have hex digits.
+        if (!isHexDigit(getNextCodepoint())) {
+            ErrorReporter.reportWithLocalFilePosition(ErrorKind.NO_HEX_DIGIT_AFTER_FLOATING_POINT, pos, 1, srcFile);
+            // Since hex literals are outside the subset, they will never be parsed, so we don't need to return a dummy token.
+            int tokenSize = (int) (pos - tokenRelativeStart);
+            tok.make(TokenKind.HEX_DOUBLE_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+            return;
+        }
+
+        // We know that there is a hex digit.
+        pos++;
+
+        // Now, we must consume digits and numeric separators until we get the binary exponent indicator.
+        while (true) {
+            switch (getNextCodepoint()) {
+                // Consume all hex digits.
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                case 'a':
+                case 'b':
+                case 'c':
+                case 'd':
+                case 'e':
+                case 'f':
+                case 'A':
+                case 'B':
+                case 'C':
+                case 'D':
+                case 'E':
+                case 'F':
+                    pos++;
+                    continue;
+
+                    // Numeric separator
+                case '_': {
+                    int posBeforeSeparator = pos;
+
+                    // A numeric separator can consist of multiple underscores, so we need to consume them all.
+                    int nextCodepoint;
+                    do {
+                        pos++;
+                        nextCodepoint = getNextCodepoint();
+                    } while (nextCodepoint == '_');
+
+                    // If there are no more underscores, the next codepoint must be a digit.
+                    if (!isHexDigit(nextCodepoint)) {
+                        ErrorReporter.reportWithLocalFilePosition(ErrorKind.ILLEGAL_CHAR_AFTER_NUMERIC_SEPARATOR, pos, 1, srcFile);
+                        // For error recovery, we will return an integer literal upto the digit before the separator.
+                        int tokenSize = (int) (posBeforeSeparator - tokenRelativeStart);
+                        tok.make(TokenKind.INT_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+                        return;
+                    }
+
+                    // If we have a digit, we can consume it and keep going.
+                    pos++;
+                    continue;
+                }
+
+                // Exponent indicator
+                case 'p':
+                case 'P':
+                    lexHexExponentLiteral(tok, tokenRelativeStart, tokenAbsoluteStart);
+                    return;
+
+                default: {
+                    // For any other characters, we have an error because Java requires the exponent.
+                    ErrorReporter.reportWithLocalFilePosition(ErrorKind.NO_HEX_DOUBLE_EXPONENT, pos, 1, srcFile);
+                    // Since hex literals are outside the subset, they will never be parsed, so we don't need to return a dummy token.
+                    int tokenSize = (int) (pos - tokenRelativeStart);
+                    tok.make(TokenKind.HEX_DOUBLE_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * This method scans the exponent part of hexadecimal double literals from the input.
+     *
+     * @param tok                The {@link Token} instance which will be mutated with the new token information.
+     * @param tokenRelativeStart The starting position of the token within the source file.
+     * @param tokenAbsoluteStart The absolute starting position of the token in the source map.
+     */
+    private void lexHexExponentLiteral(Token tok, long tokenRelativeStart, long tokenAbsoluteStart) {
+        // Consume the exponent indicator.
+        pos++;
+
+        // Signs are allowed for the exponent part.
+        int signCodepoint = getNextCodepoint();
+        boolean hasSeenSign = false;
+        if (signCodepoint == '+' || signCodepoint == '-') {
+            // Consume the sign if it exists.
+            pos++;
+            hasSeenSign = true;
+        }
+
+        // The codepoint following the exponent indicator or sign must be a digit.
+        if (!Character.isDigit(getNextCodepoint())) {
+            ErrorReporter.reportWithLocalFilePosition(ErrorKind.NO_DIGIT_AFTER_EXPONENT_INDICATOR, pos, 1, srcFile);
+            // We will set the token until before the exponent.
+            int tokenSize = hasSeenSign ? (int) (pos - 2 - tokenRelativeStart) : (int) (pos - 1 - tokenRelativeStart);
+            tok.make(TokenKind.DOUBLE_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+            return;
+        }
+
+        // Consume the digit.
+        pos++;
+
+        while (true) {
+            switch (getNextCodepoint()) {
+                // Consume all hex digits.
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    pos++;
+                    continue;
+
+                    // Numeric separator
+                case '_': {
+                    int posBeforeSeparator = pos;
+
+                    // A numeric separator can consist of multiple underscores, so we need to consume them all.
+                    int nextCodepoint;
+                    do {
+                        pos++;
+                        nextCodepoint = getNextCodepoint();
+                    } while (nextCodepoint == '_');
+
+                    // If there are no more underscores, the next codepoint must be a digit.
+                    if (!isHexDigit(nextCodepoint)) {
+                        ErrorReporter.reportWithLocalFilePosition(ErrorKind.ILLEGAL_CHAR_AFTER_NUMERIC_SEPARATOR, pos, 1, srcFile);
+                        // For error recovery, we will return an integer literal upto the digit before the separator.
+                        int tokenSize = (int) (posBeforeSeparator - tokenRelativeStart);
+                        tok.make(TokenKind.HEX_DOUBLE_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+                        return;
+                    }
+
+                    // If we have a digit, we can consume it and keep going.
+                    pos++;
+                    continue;
+                }
+
+                // Float literal suffix - not part of the AP subset.
+                case 'f':
+                case 'F': {
+                    pos++;
+                    int tokenSize = (int) (pos - tokenRelativeStart);
+                    ErrorReporter.reportWithLocalFilePosition(ErrorKind.ILLEGAL_FLOAT_LITERAL, tokenRelativeStart, tokenSize, srcFile);
+                    tok.make(TokenKind.HEX_DOUBLE_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+                    return;
+                }
+
+                case 'd':
+                case 'D': {
+                    pos++;
+                    int tokenSize = (int) (pos - tokenRelativeStart);
+                    ErrorReporter.reportWithLocalFilePosition(ErrorKind.ILLEGAL_HEX_LITERAL, tokenRelativeStart, tokenSize, srcFile);
+                    tok.make(TokenKind.HEX_DOUBLE_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+                    return;
+                }
+                default:
+                    break;
+            }
+
+            // If we get none of these, we have the end of the integer literal.
+            int tokenSize = (int) (pos - tokenRelativeStart);
+            ErrorReporter.reportWithLocalFilePosition(ErrorKind.ILLEGAL_HEX_LITERAL, tokenRelativeStart, tokenSize, srcFile);
+            tok.make(TokenKind.HEX_DOUBLE_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
             return;
         }
     }

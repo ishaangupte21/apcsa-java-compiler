@@ -205,7 +205,11 @@ public class ErrorReporter {
             "numeric literals of type 'long' are not part of the AP subset",
             "decimal literals of type 'float' are not part of the AP subset",
             "numeric underscore separators are not allowed after the decimal point",
-            "expected digit after exponent indicator in double literal"
+            "expected digit after exponent indicator in double literal",
+            "expected hexadecimal digit after '0x' specifier",
+            "expected hex digit after floating point in hexadecimal double literal",
+            "expected exponent part in hexadecimal double literal",
+            "hexadecimal (base 16) numeric literals are not part of the AP subset"
     };
 
     // This array is a lookup table for each of the possible error help messages
@@ -217,6 +221,10 @@ public class ErrorReporter {
             "consider changing it to an 'int' literal by removing the 'l' or 'L' suffix",
             "consider changing it to a 'double' literal by removing the 'd' or 'D' suffix",
             "consider removing the underscore",
-            "consider adding a digit here"
+            "consider adding a digit here",
+            "consider adding a hex digit (0-9, a-f) here",
+            "consider adding a hex digit (0-9, a-f) here",
+            "consider adding the exponent part beginning with 'p' here",
+            "consider converting it to a decimal (base 10) literal"
     };
 }

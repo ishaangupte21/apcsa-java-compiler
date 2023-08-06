@@ -17,6 +17,7 @@ public enum TokenKind {
     L_SQUARE,
     R_SQUARE,
     COMMA,
+    DOT,
 
     // Operators
     PLUS,
@@ -47,4 +48,9 @@ public enum TokenKind {
     LONG_LITERAL /* Long literals are not part of the AP subset */,
     DOUBLE_LITERAL,
     FLOAT_LITERAL /* Float literals are not part of the AP subset */,
+    ZERO_LITERAL, /* Special token kind for 0 literal */
+    HEX_LITERAL /* Hex literals are not part of the AP subset */,
+    BINARY_LITERAL /* Binary literals are not part of the AP subset */,
+    OCTAL_LITERAL /* Octal literals are not part of the AP subset */,
+    HEX_DOUBLE_LITERAL /* Hex double literals are not part of the AP subset */,
 }
