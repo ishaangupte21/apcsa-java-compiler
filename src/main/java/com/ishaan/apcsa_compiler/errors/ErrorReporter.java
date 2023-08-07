@@ -209,7 +209,10 @@ public class ErrorReporter {
             "expected hexadecimal digit after '0x' specifier",
             "expected hex digit after floating point in hexadecimal double literal",
             "expected exponent part in hexadecimal double literal",
-            "hexadecimal (base 16) numeric literals are not part of the AP subset"
+            "hexadecimal (base 16) numeric literals are not part of the AP subset",
+            "binary (base 2) numeric literals are not part of the AP subset",
+            "octal (base 8) numeric literals are not part of the AP subset",
+            "expected floating point and/or fractional part in a double literal beginning with '0'"
     };
 
     // This array is a lookup table for each of the possible error help messages
@@ -225,6 +228,9 @@ public class ErrorReporter {
             "consider adding a hex digit (0-9, a-f) here",
             "consider adding a hex digit (0-9, a-f) here",
             "consider adding the exponent part beginning with 'p' here",
-            "consider converting it to a decimal (base 10) literal"
+            "consider converting it to a decimal (base 10) literal",
+            "consider converting it to a decimal (base 10) literal",
+            "consider converting it to a decimal (base 10) literal",
+            "consider removing the 0 at the start or adding the fractional part"
     };
 }
