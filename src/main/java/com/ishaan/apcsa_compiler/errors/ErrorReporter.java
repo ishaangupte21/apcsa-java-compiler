@@ -212,7 +212,13 @@ public class ErrorReporter {
             "hexadecimal (base 16) numeric literals are not part of the AP subset",
             "binary (base 2) numeric literals are not part of the AP subset",
             "octal (base 8) numeric literals are not part of the AP subset",
-            "expected floating point and/or fractional part in a double literal beginning with '0'"
+            "expected floating point and/or fractional part in a double literal beginning with '0'",
+            "characters represented by a literal of type 'char' must be less than 0xffff",
+            "expected closing single quote to end 'char' literal",
+            "literals of type 'char' are not part of the AP subset",
+            "this escape sequence is not part of the AP subset",
+            "invalid escape sequence",
+            "expected 4 hexadecimal digits after 'u' in unicode escape sequence",
     };
 
     // This array is a lookup table for each of the possible error help messages
@@ -231,6 +237,12 @@ public class ErrorReporter {
             "consider converting it to a decimal (base 10) literal",
             "consider converting it to a decimal (base 10) literal",
             "consider converting it to a decimal (base 10) literal",
-            "consider removing the 0 at the start or adding the fractional part"
+            "consider removing the 0 at the start or adding the fractional part",
+            "use an ASCII table to make sure any characters in a 'char' literal are less than 0xffff. Otherwise, use a String literal",
+            "consider inserting \"'\" here",
+            "represent all characters with a String literal instead",
+            "remove it or replace it with '\\n', '\\\\', or '\\\"'",
+            "remove it or replace it with '\\n', '\\\\', or '\\\"'",
+            "add 4 digits, or right-justify it with 0s if the required number has 3 or less digits",
     };
 }

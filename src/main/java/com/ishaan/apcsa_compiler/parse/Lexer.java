@@ -413,6 +413,11 @@ public class Lexer {
                         }
                     }
                 }
+
+                // Char literals - these are not part of the AP subset.
+                case '\'':
+                    lexCharLiteral(tok, tokenRelativeStart, tokenAbsoluteStart);
+                    return;
             }
         }
     }
@@ -1335,6 +1340,210 @@ public class Lexer {
             ErrorReporter.reportWithLocalFilePosition(ErrorKind.NO_FRACTION_PART_IN_OCTAL_TO_DOUBLE_LITERAL, tokenRelativeStart, tokenSize, srcFile);
             tok.make(TokenKind.DOUBLE_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
             return;
+        }
+    }
+
+    /**
+     * This method will scan char literals from the input.
+     *
+     * @param tok                The {@link Token} instance which will be mutated with the new token information.
+     * @param tokenRelativeStart The starting position of the token within the source file.
+     * @param tokenAbsoluteStart The absolute starting position of the token in the source map.
+     */
+    private void lexCharLiteral(Token tok, long tokenRelativeStart, long tokenAbsoluteStart) {
+        // Consume the starting quote.
+        pos++;
+
+        // Now, get the character inside the literal.
+        int charCodepoint = getNextCodepoint();
+
+        // According to the Java spec, only codepoints from 0 to 0xffff are allowed in a character.
+        // If we get a backslash, we need to scan escape sequences.
+        if (charCodepoint == '\\') {
+            lexCharLiteralEscape(tok, tokenRelativeStart, tokenAbsoluteStart);
+            return;
+        }
+
+        // We only want to report one of the two following errors.
+        boolean errorSeen = false;
+
+        // Otherwise, we check for codepoints outside the allowed range.
+        if (charCodepoint > 0xffff) {
+            ErrorReporter.reportWithLocalFilePosition(ErrorKind.ILLEGAL_CODEPOINT_CHAR_LITERAL, pos, 1, srcFile);
+            errorSeen = true;
+        }
+
+        // Consume the codepoint.
+        pos += lastCpLength;
+
+
+        // The following character must be a single quote.
+        if (getNextCodepoint() != '\'') {
+            // Since we will not be using the actual value of this literal the inner text doesn't matter.
+            ErrorReporter.reportWithLocalFilePosition(ErrorKind.UNTERMINATED_CHAR_LITERAL, pos, 1, srcFile);
+            errorSeen = true;
+        } else {
+            // If we have the quote, consume it.
+            pos++;
+        }
+
+        // Return the token.
+        int tokenSize = (int) (pos - tokenRelativeStart);
+        if (!errorSeen) {
+            ErrorReporter.reportWithLocalFilePosition(ErrorKind.ILLEGAL_CHAR_LITERAL, tokenRelativeStart, tokenSize, srcFile);
+        }
+        tok.make(TokenKind.CHAR_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+    }
+
+    /**
+     * This method will scan escape sequences in character literals.
+     *
+     * @param tok                The {@link Token} instance which will be mutated with the new token information.
+     * @param tokenRelativeStart The starting position of the token within the source file.
+     * @param tokenAbsoluteStart The absolute starting position of the token in the source map.
+     */
+    private void lexCharLiteralEscape(Token tok, long tokenRelativeStart, long tokenAbsoluteStart) {
+        // Consume the first backslash.
+        pos++;
+
+        // To avoid confusing the user, we only want to report one error.
+        boolean isErrorSeen = false;
+
+        switch (getNextCodepoint()) {
+            // These three escapes are allowed by the AP subset.
+            case '\\':
+            case 'n':
+            case '"':
+                pos++;
+                break;
+
+            // These escapes are recognized by Java, but are not part of the AP subset.
+            case 'b':
+            case 't':
+            case 'f':
+            case 'r':
+            case '\'':
+                ErrorReporter.reportWithLocalFilePosition(ErrorKind.ESCAPE_NOT_IN_SUBSET, pos - 1, 2, srcFile);
+                isErrorSeen = true;
+                // For error recovery, we still need to consume the character.
+                pos++;
+                break;
+
+            case 'u': {
+                // Unicode escape sequence
+                pos++;
+                // We must get 4 valid hex digits here.
+                for (int i = 0; i < 4; i++) {
+                    int nextCp = getNextCodepoint();
+                    if (isNotHexDigit(nextCp)) {
+                        ErrorReporter.reportWithLocalFilePosition(ErrorKind.INVALID_UNICODE_ESCAPE, pos, 1, srcFile);
+                        recoverFromInvalidEscape(tok, tokenRelativeStart, tokenAbsoluteStart, true);
+                        return;
+                    }
+
+                    // Consume the hex digit.
+                    pos++;
+                }
+
+                break;
+            }
+
+            case '0': {
+                // If the next digit is an octal character, we have an octal escape.
+                // Otherwise, we have the '\0' escape.
+                pos++;
+
+                // 2nd octal digit
+                if (isNotOctalDigit(getNextCodepoint())) {
+                    // '\0' escape
+                    ErrorReporter.reportWithLocalFilePosition(ErrorKind.ESCAPE_NOT_IN_SUBSET, pos - 2, 2, srcFile);
+                    isErrorSeen = true;
+                    break;
+                }
+
+                // consume the second octal digit.
+                pos++;
+
+                // 3rd octal digit
+                if (isNotOctalDigit(getNextCodepoint())) {
+                    break;
+                }
+
+                // Consume the 2nd octal digit
+                pos++;
+                break;
+            }
+
+            default: {
+                // For any other characters, we must report the error.
+                ErrorReporter.reportWithLocalFilePosition(ErrorKind.INVALID_ESCAPE, pos - 1, 2, srcFile);
+                isErrorSeen = true;
+                // Consume the codepoint
+                pos += lastCpLength;
+                break;
+            }
+        }
+
+        // Now, we need to check for the closing quote.
+        if (getNextCodepoint() != '\'' && !isErrorSeen) {
+            ErrorReporter.reportWithLocalFilePosition(ErrorKind.UNTERMINATED_CHAR_LITERAL, pos, 1, srcFile);
+            isErrorSeen = true;
+        } else {
+            // If we have the quote, we can consume it.
+            pos++;
+        }
+
+        int tokenSize = (int) (pos - tokenRelativeStart);
+        if (!isErrorSeen) {
+            ErrorReporter.reportWithLocalFilePosition(ErrorKind.ILLEGAL_CHAR_LITERAL, tokenRelativeStart, tokenSize, srcFile);
+        }
+        tok.make(TokenKind.CHAR_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+    }
+
+    /**
+     * This method will allow the lexical analyzer to recover from invalid escape sequences.
+     * The idea here is to eject all characters until we either find the closing quote, or we reach the EOF.
+     *
+     * @param tok
+     * @param tokenRelativeStart
+     * @param tokenAbsoluteStart
+     * @param isCharLiteral
+     */
+    private void recoverFromInvalidEscape(Token tok, long tokenRelativeStart, long tokenAbsoluteStart, boolean isCharLiteral) {
+        // We have two paths here.
+        // In the case of a char literal, we will look for single quotes.
+        // Otherwise, we will look for double quotes for the string literal.
+
+        if (isCharLiteral) {
+            // Now, we can keep consuming until we find a single quote.
+            while (true) {
+                switch (getNextCodepoint()) {
+                    case '\'': {
+                        // Consume the quote.
+                        pos++;
+                        int tokenSize = (int) (pos - tokenRelativeStart);
+                        tok.make(TokenKind.CHAR_LITERAL, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+                        return;
+                    }
+
+                    // However, we need to consume an escaped single quote.
+                    case '\\':
+                        if (fileBuffer.get(++pos) == '\'') {
+                            pos++;
+                        }
+                        continue;
+
+                    case EOF:
+                        ErrorReporter.reportWithLocalFilePosition(ErrorKind.UNTERMINATED_CHAR_LITERAL, pos, 1, srcFile);
+                        tok.make(TokenKind.EOF, pos + srcFileOffset, pos, 1);
+                        return;
+
+
+                    default:
+                        pos += lastCpLength;
+                        break;
+                }
+            }
         }
     }
 }
