@@ -54,4 +54,5 @@ public enum TokenKind {
     OCTAL_LITERAL /* Octal literals are not part of the AP subset */,
     HEX_DOUBLE_LITERAL /* Hex double literals are not part of the AP subset */,
     CHAR_LITERAL /* Char literals are not part of the AP subset */,
+    STRING_LITERAL
 }

@@ -63,7 +63,7 @@ public class ErrorReporter {
         }
 
         String errHelpMsg = errorHelpMessages[kind.ordinal()];
-        System.err.printf("help: %s\n", errHelpMsg);
+        System.err.printf("help: %s\n\n", errHelpMsg);
     }
 
     /**
@@ -219,6 +219,8 @@ public class ErrorReporter {
             "this escape sequence is not part of the AP subset",
             "invalid escape sequence",
             "expected 4 hexadecimal digits after 'u' in unicode escape sequence",
+            "unexpected file end within string literal",
+            "newline characters are not allowed in string literals",
     };
 
     // This array is a lookup table for each of the possible error help messages
@@ -244,5 +246,7 @@ public class ErrorReporter {
             "remove it or replace it with '\\n', '\\\\', or '\\\"'",
             "remove it or replace it with '\\n', '\\\\', or '\\\"'",
             "add 4 digits, or right-justify it with 0s if the required number has 3 or less digits",
+            "consider ending the string literal by adding '\"' to the end",
+            "if you need a newline character, use '\\n' instead"
     };
 }
