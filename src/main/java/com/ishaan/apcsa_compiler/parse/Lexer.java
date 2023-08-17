@@ -433,6 +433,10 @@ public class Lexer {
                     }
 
                     // If we don't have an acceptable character, diagnose the error.
+                    ErrorReporter.reportWithLocalFilePosition(ErrorKind.UNEXPECTED_CHARACTER, pos, 1, srcFile);
+                    // Consume this codepoint and restart the lexer.
+                    pos += lastCpLength;
+                    break;
             }
         }
     }

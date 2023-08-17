@@ -4,6 +4,7 @@ package com.ishaan.apcsa_compiler.errors;
  * This enum represents each of the possible error types that can be encountered by the compiler.
  */
 public enum ErrorKind {
+    /* Lexical errors */
     ILLEGAL_EOF_MULTILINE_COMMENT,
     ILLEGAL_OPERATOR_AMPERSAND,
     ILLEGAL_OPERATOR_BAR,
@@ -26,5 +27,8 @@ public enum ErrorKind {
     INVALID_ESCAPE,
     INVALID_UNICODE_ESCAPE,
     UNTERMINATED_STRING_LITERAL,
-    NEWLINE_IN_STRING_LITERAL
+    NEWLINE_IN_STRING_LITERAL,
+    UNEXPECTED_CHARACTER,
+
+    /* Parsing errors */
 }
