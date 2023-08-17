@@ -54,5 +54,34 @@ public enum TokenKind {
     OCTAL_LITERAL /* Octal literals are not part of the AP subset */,
     HEX_DOUBLE_LITERAL /* Hex double literals are not part of the AP subset */,
     CHAR_LITERAL /* Char literals are not part of the AP subset */,
-    STRING_LITERAL
+    STRING_LITERAL,
+
+    // Keywords
+    KW_NOT_IN_SUBSET /* Token type for each Java keyword that is not in the subset */,
+
+    KW_BOOLEAN,
+    KW_CLASS,
+    KW_DO,
+    KW_DOUBLE,
+    KW_ELSE,
+    KW_EXTENDS,
+    KW_FINAL,
+    KW_FOR,
+    KW_IF,
+    KW_IMPLEMENTS,
+    KW_IMPORT,
+    KW_INT,
+    KW_INTERFACE,
+    KW_NEW,
+    KW_PACKAGE,
+    KW_PRIVATE,
+    KW_PUBLIC,
+    KW_RETURN,
+    KW_STATIC,
+    KW_SUPER,
+    KW_THIS,
+    KW_VOID,
+    KW_WHILE,
+    // Identifier
+    ID,
 }

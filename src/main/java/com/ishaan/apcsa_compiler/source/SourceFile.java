@@ -187,4 +187,22 @@ public class SourceFile {
 
         return new String(tempByteBuffer, StandardCharsets.UTF_8);
     }
+
+    /**
+     * This file obtains the text of a specific length from a certain starting point.
+     *
+     * @param relativePosition The starting position of the token within the file
+     * @param size             The length of the token
+     * @return The String contents of the token
+     */
+    public String getText(long relativePosition, int size) {
+        byte[] tempBuffer = new byte[size];
+
+        int index = (int) relativePosition;
+        for (int i = 0; i < size; i++) {
+            tempBuffer[i] = buffer.get(index++);
+        }
+
+        return new String(tempBuffer, StandardCharsets.UTF_8);
+    }
 }

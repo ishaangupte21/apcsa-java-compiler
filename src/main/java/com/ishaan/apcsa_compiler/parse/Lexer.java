@@ -7,6 +7,7 @@ import com.ishaan.apcsa_compiler.source.SourceFile;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * This class is the Lexical Analyzer which will tokenize the Java input.
@@ -423,6 +424,15 @@ public class Lexer {
                 case '"':
                     lexStringLiteral(tok, tokenRelativeStart, tokenAbsoluteStart);
                     return;
+
+                // For any other characters, we must check for identifiers.
+                default:
+                    if (Character.isJavaIdentifierStart(cp)) {
+                        lexIdentifier(tok, tokenRelativeStart, tokenAbsoluteStart);
+                        return;
+                    }
+
+                    // If we don't have an acceptable character, diagnose the error.
             }
         }
     }
@@ -1731,5 +1741,36 @@ public class Lexer {
                 break;
             }
         }
+    }
+
+    /**
+     * This method scans identifiers and determines if they are keywords.
+     *
+     * @param tok                The {@link Token} instance which will be mutated with the new token information.
+     * @param tokenRelativeStart The starting position of the token within the source file.
+     * @param tokenAbsoluteStart The absolute starting position of the token in the source map.
+     */
+    private void lexIdentifier(Token tok, long tokenRelativeStart, long tokenAbsoluteStart) {
+        // Consume the first codepoint.
+        pos += lastCpLength;
+
+        // Consume all identifier codepoints.
+        int cp = getNextCodepoint();
+        while (Character.isJavaIdentifierPart(cp)) {
+            pos += lastCpLength;
+            cp = getNextCodepoint();
+        }
+
+        // Once all the identifier codepoints have been consumed, we need to check if this is a keyword.
+        int tokenSize = (int) (pos - tokenRelativeStart);
+        String tokenText = srcFile.getText(tokenRelativeStart, tokenSize);
+
+        Optional<TokenKind> potentialKeyword = Keywords.checkForKeyword(tokenText);
+        if (potentialKeyword.isPresent()) {
+            tok.make(potentialKeyword.get(), tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+            return;
+        }
+
+        tok.make(TokenKind.ID, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
     }
 }
