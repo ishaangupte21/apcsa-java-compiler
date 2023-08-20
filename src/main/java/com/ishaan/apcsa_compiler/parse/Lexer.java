@@ -34,6 +34,10 @@ public class Lexer {
         this.srcFileOffset = srcFile.getOffset();
     }
 
+    public SourceFile getSrcFile() {
+        return srcFile;
+    }
+
     /**
      * This method gets the next codepoint from the buffer.
      * It will check for any UTF-8 multibyte codepoints, and return them if they exist.
@@ -1776,5 +1780,7 @@ public class Lexer {
         }
 
         tok.make(TokenKind.ID, tokenAbsoluteStart, tokenRelativeStart, tokenSize);
+        // We will also set the String value to the one we just found in order to avoid traversing through the bytes again.
+        tok.setLastStrValue(tokenText);
     }
 }

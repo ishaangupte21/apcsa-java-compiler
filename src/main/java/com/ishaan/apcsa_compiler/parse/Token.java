@@ -15,6 +15,8 @@ public class Token {
 
     private int size;
 
+    private String lastStrValue;
+
     public TokenKind getKind() {
         return kind;
     }
@@ -31,16 +33,26 @@ public class Token {
         return size;
     }
 
+    public String getLastStrValue() {
+        return lastStrValue;
+    }
+
+    public void setLastStrValue(String lastStrValue) {
+        this.lastStrValue = lastStrValue;
+    }
+
     private Token() {
         this.kind = TokenKind.DUMMY;
         this.absoluteStartPos = -1;
         this.relativeStartPos = -1;
         this.size = -1;
+        this.lastStrValue = null;
     }
 
     public static Token dummy() {
         return new Token();
     }
+
 
     public void make(TokenKind kind, long absoluteStartPos, long relativeStartPos, int size) {
         this.kind = kind;

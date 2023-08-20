@@ -221,7 +221,9 @@ public class ErrorReporter {
             "expected 4 hexadecimal digits after 'u' in unicode escape sequence",
             "unexpected file end within string literal",
             "newline characters are not allowed in string literals",
-            "unexpected character"
+            "unexpected character",
+            "expected semicolon",
+            "expected identifier in 'package' declaration"
     };
 
     // This array is a lookup table for each of the possible error help messages
@@ -249,6 +251,8 @@ public class ErrorReporter {
             "add 4 digits, or right-justify it with 0s if the required number has 3 or less digits",
             "consider ending the string literal by adding '\"' to the end",
             "if you need a newline character, use '\\n' instead",
-            "this character is not valid Java syntax. However, it can be wrapped in a String if you wish to print it."
+            "this character is not valid Java syntax. However, it can be wrapped in a String if you wish to print it",
+            "consider adding ';' at the given location",
+            "consider adding an identifier and separate package directories with '.'"
     };
 }

@@ -31,4 +31,6 @@ public enum ErrorKind {
     UNEXPECTED_CHARACTER,
 
     /* Parsing errors */
+    MISSING_SEMICOLON,
+    NO_ID_IN_PKG_STMT
 }

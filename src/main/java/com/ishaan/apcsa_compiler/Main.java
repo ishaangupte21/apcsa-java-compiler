@@ -1,7 +1,9 @@
 package com.ishaan.apcsa_compiler;
 
 import com.ishaan.apcsa_compiler.parse.Lexer;
+import com.ishaan.apcsa_compiler.parse.Parser;
 import com.ishaan.apcsa_compiler.parse.Token;
+import com.ishaan.apcsa_compiler.parse.ast.ASTCompilationUnit;
 import com.ishaan.apcsa_compiler.source.*;
 
 import java.io.IOException;
@@ -20,10 +22,10 @@ public class Main {
         try {
             SourceFile srcFile = SourceMap.bufferSrcFile(args[0]);
             Lexer lexer = new Lexer(srcFile);
-            Token tok = Token.dummy();
+            Parser parser = new Parser(lexer);
 
-            lexer.getNextToken(tok);
-            System.out.println(tok);
+            ASTCompilationUnit tree = parser.parseCompilationUnit();
+            System.out.println(tree);
 
         } catch (Exception e) {
             if (e instanceof IOException) {
